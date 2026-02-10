@@ -1,0 +1,80 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply box-border;
+  }
+
+  html {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-[#0f1117] text-slate-200 m-0 p-0;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-700 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-600;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-[#1a1d27]/80 backdrop-blur-xl border border-white/[0.06] rounded-2xl;
+  }
+
+  .glass-surface {
+    @apply bg-[#1a1d27]/60 backdrop-blur-md border border-white/[0.04];
+  }
+
+  .status-badge {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wider;
+  }
+
+  .priority-dot {
+    @apply w-2 h-2 rounded-full;
+  }
+
+  .priority-high {
+    @apply bg-rose-500;
+  }
+
+  .priority-medium {
+    @apply bg-amber-400;
+  }
+
+  .priority-low {
+    @apply bg-emerald-400;
+  }
+
+  .nav-item {
+    @apply w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer;
+  }
+
+  .nav-item-active {
+    @apply bg-blue-600/15 text-blue-400 border border-blue-500/20;
+  }
+
+  .nav-item-inactive {
+    @apply text-slate-400 hover:bg-white/[0.04] hover:text-slate-200;
+  }
+}

@@ -1,0 +1,216 @@
+import pandas as pd
+import json
+import datetime
+
+file_path = 'QBE Project Daily Action Items_2026.xlsx'
+
+def clean_value(val):
+    if pd.isna(val):
+        return ""
+    if isinstance(val, (datetime.datetime, datetime.date)):
+        return val.strftime('%Y-%m-%d')
+    return str(val).strip()
+
+def normalize_status(raw):
+    raw = str(raw).lower().strip()
+    if raw in ('', 'nan'):
+        return 'open'
+    if 'closed' in raw or 'clsoed' in raw or 'cloed' in raw:
+        return 'closed'
+    if 'live' in raw:
+        return 'live'
+    if 'hold' in raw:
+        return 'on-hold'
+    if 'progress' in raw:
+        return 'in-progress'
+    if 'duplicate' in raw:
+        return 'closed'
+    if 'known' in raw:
+        return 'on-hold'
+    if 'dev' in raw or 'qa' in raw:
+        return 'in-progress'
+    return 'open'
+
+def get_priority(status, comments):
+    s = str(status).lower() + ' ' + str(comments).lower()
+    if any(w in s for w in ['urgent', 'critical', 'block', 'high']):
+        return 'high'
+    if any(w in s for w in ['low', 'minor']):
+        return 'low'
+    return 'medium'
+
+try:
+    xl = pd.ExcelFile(file_path)
+    projects = []
+
+    # ── 1. Cortex Items (Kanban) ──
+    if 'Cortex items' in xl.sheet_names:
+        df = xl.parse('Cortex items')
+        df.columns = [str(c).strip() for c in df.columns]
+
+        status_map = {
+            'todo':       {'id': 'todo',       'title': 'To Do',        'color': '#3b82f6', 'taskIds': []},
+            'inprogress': {'id': 'inprogress', 'title': 'In Progress',  'color': '#f59e0b', 'taskIds': []},
+            'qa':         {'id': 'qa',         'title': 'Ready for QA', 'color': '#8b5cf6', 'taskIds': []},
+            'live':       {'id': 'live',       'title': 'Live',         'color': '#10b981', 'taskIds': []},
+            'done':       {'id': 'done',       'title': 'Closed',       'color': '#6b7280', 'taskIds': []},
+        }
+        tasks = {}
+
+        for idx, row in df.iterrows():
+            tid = f"cortex-{idx}"
+            raw_status = str(row.get('Status', '')).lower()
+
+            sid = 'todo'
+            if 'live' in raw_status:   sid = 'live'
+            elif 'progress' in raw_status: sid = 'inprogress'
+            elif 'qa' in raw_status:   sid = 'qa'
+            elif 'closed' in raw_status: sid = 'done'
+
+            status_map[sid]['taskIds'].append(tid)
+            tasks[tid] = {
+                'id': tid,
+                'code': clean_value(row.get('CR', '')),
+                'title': clean_value(row.get('Description', 'No Title')),
+                'status': sid,
+                'assignee': clean_value(row.get('Assignee', 'Unassigned')) or 'Unassigned',
+                'liveDate': clean_value(row.get('Live Date', '')),
+                'comments': clean_value(row.get('Comments', '')),
+                'priority': get_priority(row.get('Status', ''), row.get('Comments', '')),
+            }
+
+        projects.append({
+            'id': 'cortex',
+            'name': 'Cortex Release',
+            'icon': 'Layers',
+            'type': 'kanban',
+            'columns': list(status_map.values()),
+            'tasks': tasks,
+        })
+
+    # ── 2. July 2024 Dup (Action items table) ──
+    if 'July 2024  Dup' in xl.sheet_names:
+        df = xl.parse('July 2024  Dup', header=None)
+
+        # Row 0 has headers
+        raw_headers = [clean_value(c) for c in df.iloc[0]]
+        # Clean up: use meaningful names
+        header_names = ['#', 'Date Raised', 'Area', 'Item', 'Target Date',
+                        'Assignee', 'Raised By', 'Responsible', 'Status',
+                        'Next Action', 'Comment']
+        # Extend if more cols
+        while len(header_names) < len(raw_headers):
+            header_names.append(f'Extra {len(header_names)}')
+
+        items = []
+        for idx in range(1, len(df)):
+            row = df.iloc[idx]
+            cells = [clean_value(c) for c in row]
+
+            # Skip fully empty rows
+            if all(c == '' for c in cells):
+                continue
+
+            area = cells[2] if len(cells) > 2 else ''
+            item_desc = cells[3] if len(cells) > 3 else ''
+            status_raw = cells[8] if len(cells) > 8 else ''
+            responsible = cells[7] if len(cells) > 7 else ''
+            next_action = cells[9] if len(cells) > 9 else ''
+            assignee = cells[5] if len(cells) > 5 else ''
+            date_raised = cells[1] if len(cells) > 1 else ''
+            target_date = cells[4] if len(cells) > 4 else ''
+            comment = cells[10] if len(cells) > 10 else ''
+
+            status = normalize_status(status_raw)
+            priority = get_priority(status_raw, next_action)
+
+            items.append({
+                'id': f'july-{idx}',
+                'area': area,
+                'title': area if area else item_desc,
+                'description': item_desc,
+                'status': status,
+                'statusRaw': status_raw,
+                'responsible': responsible,
+                'assignee': assignee or responsible,
+                'nextAction': next_action,
+                'dateRaised': date_raised,
+                'targetDate': target_date,
+                'comment': comment,
+                'priority': priority,
+            })
+
+        projects.append({
+            'id': 'july2024',
+            'name': 'Daily Action Items',
+            'icon': 'ClipboardList',
+            'type': 'table',
+            'headers': header_names[:11],
+            'items': items,
+        })
+
+    # ── 3. Periodic Updates ──
+    if 'Periodic Updates' in xl.sheet_names:
+        df = xl.parse('Periodic Updates', header=None)
+        items = []
+        for idx in range(1, len(df)):
+            row = df.iloc[idx]
+            cells = [clean_value(c) for c in row]
+            if all(c == '' for c in cells):
+                continue
+            area = cells[0] if len(cells) > 0 else ''
+            action = cells[1] if len(cells) > 1 else ''
+            detail = cells[2] if len(cells) > 2 else ''
+            items.append({
+                'id': f'periodic-{idx}',
+                'area': area,
+                'title': area,
+                'action': action,
+                'detail': detail,
+                'status': 'open',
+                'priority': 'medium',
+            })
+        if items:
+            projects.append({
+                'id': 'periodic',
+                'name': 'Periodic Updates',
+                'icon': 'CalendarClock',
+                'type': 'simple',
+                'items': items,
+            })
+
+    # ── 4. Generic & Other Items ──
+    if 'Generic& Other Items' in xl.sheet_names:
+        df = xl.parse('Generic& Other Items', header=None)
+        items = []
+        for idx in range(1, len(df)):
+            row = df.iloc[idx]
+            cells = [clean_value(c) for c in row]
+            if all(c == '' for c in cells):
+                continue
+            items.append({
+                'id': f'generic-{idx}',
+                'title': cells[0] if len(cells) > 0 else '',
+                'description': cells[1] if len(cells) > 1 else '',
+                'detail': cells[2] if len(cells) > 2 else '',
+                'status': normalize_status(cells[3] if len(cells) > 3 else ''),
+                'priority': 'medium',
+            })
+        if items:
+            projects.append({
+                'id': 'generic',
+                'name': 'Generic & Other Items',
+                'icon': 'Boxes',
+                'type': 'simple',
+                'items': items,
+            })
+
+    # ── Write output ──
+    js = f"export const initialData = {json.dumps({'projects': projects}, indent=2)};\n"
+    with open('scrum-app/src/data/initialData.js', 'w', encoding='utf-8') as f:
+        f.write(js)
+    print(f"✓ Wrote {len(projects)} projects to initialData.js")
+
+except Exception as e:
+    import traceback
+    traceback.print_exc()
