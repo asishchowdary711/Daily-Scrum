@@ -3,6 +3,8 @@ import {
     initializeDefaultUsers,
     verifyPassword,
     generateSessionToken,
+    verifySessionSignature,
+    generateHMACKey,
     sanitizeInput,
 } from './authUtils';
 import { checkRateLimit, recordFailedAttempt, recordSuccess } from './rateLimiter';
@@ -16,32 +18,73 @@ export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const expiryTimerRef = useRef(null);
+    // In-memory HMAC key — lost on page reload → forces re-auth (Finding 1)
+    const hmacKeyRef = useRef(null);
 
     // ─── Restore session on mount ───
     useEffect(() => {
         async function restoreSession() {
             try {
+                // Generate ephemeral HMAC key for this browser session
+                hmacKeyRef.current = await generateHMACKey();
+
                 // Initialize default users on first load
                 await initializeDefaultUsers();
 
                 // Check for existing session
-                const sessionRaw =
-                    sessionStorage.getItem(SESSION_KEY) ||
-                    localStorage.getItem(REMEMBER_KEY);
+                let sessionRaw = null;
 
-                if (sessionRaw) {
-                    const session = JSON.parse(sessionRaw);
-                    if (session.expiresAt > Date.now()) {
-                        setUser(session.user);
-                        scheduleAutoLogout(session.expiresAt);
-                    } else {
-                        // Session expired — clean up
-                        sessionStorage.removeItem(SESSION_KEY);
+                try {
+                    const sessionStr = sessionStorage.getItem(SESSION_KEY);
+                    if (sessionStr) { sessionRaw = JSON.parse(sessionStr); }
+                } catch {
+                    sessionStorage.removeItem(SESSION_KEY);
+                }
+
+                if (!sessionRaw) {
+                    try {
+                        const rememberStr = localStorage.getItem(REMEMBER_KEY);
+                        if (rememberStr) { sessionRaw = JSON.parse(rememberStr); }
+                    } catch {
                         localStorage.removeItem(REMEMBER_KEY);
                     }
                 }
+
+                if (sessionRaw && sessionRaw.expiresAt > Date.now() && sessionRaw.user) {
+                    // Validate HMAC signature if present (Finding 1)
+                    if (sessionRaw.signature && sessionRaw.payload) {
+                        const valid = await verifySessionSignature(
+                            sessionRaw.payload,
+                            sessionRaw.signature,
+                            hmacKeyRef.current
+                        );
+                        if (!valid) {
+                            // Signature doesn't match this session's key — reject
+                            // This is expected on page reload (new key generated)
+                            sessionStorage.removeItem(SESSION_KEY);
+                            localStorage.removeItem(REMEMBER_KEY);
+                            setLoading(false);
+                            return;
+                        }
+                    } else {
+                        // Legacy session without signature — reject it (force re-login)
+                        sessionStorage.removeItem(SESSION_KEY);
+                        localStorage.removeItem(REMEMBER_KEY);
+                        setLoading(false);
+                        return;
+                    }
+
+                    setUser(sessionRaw.user);
+                    scheduleAutoLogout(sessionRaw.expiresAt);
+                } else if (sessionRaw) {
+                    // Expired — clean up
+                    sessionStorage.removeItem(SESSION_KEY);
+                    localStorage.removeItem(REMEMBER_KEY);
+                }
             } catch (err) {
                 console.error('Session restore failed:', err);
+                sessionStorage.removeItem(SESSION_KEY);
+                localStorage.removeItem(REMEMBER_KEY);
             }
             setLoading(false);
         }
@@ -51,7 +94,7 @@ export function AuthProvider({ children }) {
         return () => {
             if (expiryTimerRef.current) clearTimeout(expiryTimerRef.current);
         };
-    }, []);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const scheduleAutoLogout = useCallback((expiresAt) => {
         if (expiryTimerRef.current) clearTimeout(expiryTimerRef.current);
@@ -61,7 +104,7 @@ export function AuthProvider({ children }) {
                 logout();
             }, remaining);
         }
-    }, []);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     // ─── Login ───
     const login = useCallback(async (username, password, rememberMe = false) => {
@@ -86,13 +129,25 @@ export function AuthProvider({ children }) {
             return { success: false, error: 'Password is required' };
         }
 
-        // Load users
+        // Load users (Finding 6: guarded JSON.parse)
         const usersRaw = localStorage.getItem('scrumpro_users');
         if (!usersRaw) {
             return { success: false, error: 'Authentication system not initialized' };
         }
 
-        const users = JSON.parse(usersRaw);
+        let users;
+        try {
+            users = JSON.parse(usersRaw);
+            if (!Array.isArray(users)) throw new Error('Invalid user data format');
+        } catch {
+            localStorage.removeItem('scrumpro_users');
+            // Re-initialize
+            users = await initializeDefaultUsers();
+            if (!users || users.length === 0) {
+                return { success: false, error: 'Authentication data corrupted. Please reload the page.' };
+            }
+        }
+
         const matchedUser = users.find(u => u.username.toLowerCase() === cleanUsername);
 
         if (!matchedUser) {
@@ -122,11 +177,11 @@ export function AuthProvider({ children }) {
             };
         }
 
-        // Success — create session
+        // Success — create HMAC-signed session (Finding 1)
         recordSuccess();
 
         const expiryHours = rememberMe ? 720 : 8; // 30 days or 8 hours
-        const sessionToken = await generateSessionToken(matchedUser.id, expiryHours);
+        const sessionToken = await generateSessionToken(matchedUser.id, hmacKeyRef.current, expiryHours);
 
         const sessionData = {
             user: {
@@ -136,13 +191,17 @@ export function AuthProvider({ children }) {
                 role: matchedUser.role,
             },
             token: sessionToken.token,
+            signature: sessionToken.signature,
+            payload: sessionToken.payload,
             expiresAt: sessionToken.expiresAt,
         };
 
-        // Store session
+        // Store session + clear stale remember-me if not checked (Finding 3)
         sessionStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
         if (rememberMe) {
             localStorage.setItem(REMEMBER_KEY, JSON.stringify(sessionData));
+        } else {
+            localStorage.removeItem(REMEMBER_KEY); // Finding 3: explicit cleanup
         }
 
         setUser(sessionData.user);
@@ -177,6 +236,7 @@ export function AuthProvider({ children }) {
 /**
  * Hook to access auth context.
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
     const ctx = useContext(AuthContext);
     if (!ctx) throw new Error('useAuth must be used within an AuthProvider');

@@ -24,7 +24,7 @@ const IssueCard = ({ task, index, onClick }) => {
                     ref={provided.innerRef}
                     {...provided.draggableProps}
                     {...provided.dragHandleProps}
-                    onClick={(e) => {
+                    onClick={() => {
                         // Only open detail if not dragging
                         if (!snapshot.isDragging && onClick) {
                             onClick(task);

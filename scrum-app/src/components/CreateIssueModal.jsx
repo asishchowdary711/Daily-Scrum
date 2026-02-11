@@ -1,44 +1,73 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import { clsx } from 'clsx';
 
+// Finding 4: Separate status options per project type
+const KANBAN_STATUSES = [
+    { value: 'todo', label: 'To Do' },
+    { value: 'inprogress', label: 'In Progress' },
+    { value: 'qa', label: 'Ready for QA' },
+    { value: 'live', label: 'Live' },
+    { value: 'done', label: 'Done / Closed' },
+];
+
+const TABLE_STATUSES = [
+    { value: 'open', label: 'Open' },
+    { value: 'in-progress', label: 'In Progress' },
+    { value: 'on-hold', label: 'On Hold' },
+    { value: 'live', label: 'Live' },
+    { value: 'closed', label: 'Closed' },
+];
+
+const getDefaultForm = (projectType) => ({
+    title: '',
+    code: '',
+    status: projectType === 'kanban' ? 'todo' : 'open',
+    priority: 'medium',
+    assignee: '',
+    liveDate: '',
+    comments: '',
+    area: '',
+    description: '',
+    responsible: '',
+    nextAction: '',
+});
+
 const CreateIssueModal = ({ isOpen, onClose, onSubmit, projectType }) => {
-    const [form, setForm] = useState({
-        title: '',
-        code: '',
-        status: 'todo',
-        priority: 'medium',
-        assignee: '',
-        liveDate: '',
-        comments: '',
-        area: '',
-        description: '',
-        responsible: '',
-        nextAction: '',
-    });
+    const [form, setForm] = useState(() => getDefaultForm(projectType));
+
+    // Finding 11: Reset form on projectType change
+    useEffect(() => {
+        setForm(getDefaultForm(projectType));
+    }, [projectType]);
 
     const handleChange = (field, value) => {
         setForm(prev => ({ ...prev, [field]: value }));
+    };
+
+    // Finding 11: Reset form on close
+    const handleClose = () => {
+        setForm(getDefaultForm(projectType));
+        onClose();
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
         if (!form.title.trim()) return;
         onSubmit(form);
-        setForm({
-            title: '', code: '', status: 'todo', priority: 'medium',
-            assignee: '', liveDate: '', comments: '', area: '',
-            description: '', responsible: '', nextAction: '',
-        });
+        setForm(getDefaultForm(projectType));
         onClose();
     };
+
+    // Finding 4: Use correct status list
+    const statusOptions = projectType === 'kanban' ? KANBAN_STATUSES : TABLE_STATUSES;
 
     const inputClass = "w-full px-3 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500/40 focus:border-blue-500/30 transition-all";
     const labelClass = "block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5";
     const selectClass = "w-full px-3 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500/40 focus:border-blue-500/30 transition-all appearance-none cursor-pointer";
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="Create New Issue" size="md">
+        <Modal isOpen={isOpen} onClose={handleClose} title="Create New Issue" size="md">
             <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Title */}
                 <div>
@@ -87,12 +116,9 @@ const CreateIssueModal = ({ isOpen, onClose, onSubmit, projectType }) => {
                             onChange={(e) => handleChange('status', e.target.value)}
                             className={selectClass}
                         >
-                            <option value="todo">To Do</option>
-                            <option value="open">Open</option>
-                            <option value="in-progress">In Progress</option>
-                            <option value="on-hold">On Hold</option>
-                            <option value="live">Live</option>
-                            <option value="closed">Closed</option>
+                            {statusOptions.map(opt => (
+                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
                         </select>
                     </div>
                     <div>
@@ -118,11 +144,13 @@ const CreateIssueModal = ({ isOpen, onClose, onSubmit, projectType }) => {
                     </div>
                 </div>
 
-                {/* Description */}
+                {/* Description — Finding 11: explicit per-type field binding */}
                 <div>
-                    <label className={labelClass}>Description / Comments</label>
+                    <label className={labelClass}>
+                        {projectType === 'kanban' ? 'Comments' : 'Description'}
+                    </label>
                     <textarea
-                        value={form.comments || form.description}
+                        value={projectType === 'kanban' ? form.comments : form.description}
                         onChange={(e) => handleChange(projectType === 'kanban' ? 'comments' : 'description', e.target.value)}
                         placeholder="Add details..."
                         rows={3}
@@ -147,7 +175,7 @@ const CreateIssueModal = ({ isOpen, onClose, onSubmit, projectType }) => {
                 <div className="flex justify-end gap-3 pt-4 border-t border-white/[0.06]">
                     <button
                         type="button"
-                        onClick={onClose}
+                        onClick={handleClose}
                         className="px-4 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-white/[0.06] transition-all"
                     >
                         Cancel

@@ -1,30 +1,18 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import IssueCard from './IssueCard';
 import IssueDetailModal from './IssueDetailModal';
 import { clsx } from 'clsx';
 
-const KanbanBoard = ({ initialData, searchQuery = '', externalNewTasks = [] }) => {
-    const [data, setData] = useState(initialData);
+// Finding 8: KanbanBoard now receives lifted state from App
+const KanbanBoard = ({ projectId, boardState, onBoardChange, searchQuery = '' }) => {
     const [selectedTask, setSelectedTask] = useState(null);
+    const data = boardState;
 
-    // Merge externally added tasks
-    React.useEffect(() => {
-        if (externalNewTasks.length > 0) {
-            const latest = externalNewTasks[externalNewTasks.length - 1];
-            if (!data.tasks[latest.id]) {
-                setData(prev => ({
-                    ...prev,
-                    tasks: { ...prev.tasks, [latest.id]: latest },
-                    columns: prev.columns.map(col =>
-                        col.id === latest.status
-                            ? { ...col, taskIds: [...col.taskIds, latest.id] }
-                            : col
-                    ),
-                }));
-            }
-        }
-    }, [externalNewTasks]);
+    // Wrapper to update both local and parent state
+    const updateBoard = useCallback((newState) => {
+        onBoardChange(projectId, newState);
+    }, [projectId, onBoardChange]);
 
     const filteredData = useMemo(() => {
         if (!searchQuery.trim()) return data;
@@ -32,7 +20,7 @@ const KanbanBoard = ({ initialData, searchQuery = '', externalNewTasks = [] }) =
         const matchingTaskIds = Object.values(data.tasks)
             .filter(t =>
                 t.title.toLowerCase().includes(q) ||
-                t.code.toLowerCase().includes(q) ||
+                (t.code || '').toLowerCase().includes(q) ||
                 (t.comments || '').toLowerCase().includes(q) ||
                 (t.assignee || '').toLowerCase().includes(q)
             )
@@ -59,7 +47,7 @@ const KanbanBoard = ({ initialData, searchQuery = '', externalNewTasks = [] }) =
             const newTaskIds = Array.from(start.taskIds);
             newTaskIds.splice(source.index, 1);
             newTaskIds.splice(destination.index, 0, draggableId);
-            setData({
+            updateBoard({
                 ...data,
                 columns: data.columns.map(col => col.id === start.id ? { ...col, taskIds: newTaskIds } : col),
             });
@@ -76,7 +64,7 @@ const KanbanBoard = ({ initialData, searchQuery = '', externalNewTasks = [] }) =
             [draggableId]: { ...data.tasks[draggableId], status: finish.id },
         };
 
-        setData({
+        updateBoard({
             ...data,
             tasks: updatedTasks,
             columns: data.columns.map(col => {
@@ -104,7 +92,7 @@ const KanbanBoard = ({ initialData, searchQuery = '', externalNewTasks = [] }) =
             });
         }
 
-        setData({
+        updateBoard({
             ...data,
             tasks: { ...data.tasks, [updatedTask.id]: updatedTask },
             columns: newColumns,
@@ -117,7 +105,7 @@ const KanbanBoard = ({ initialData, searchQuery = '', externalNewTasks = [] }) =
         const newTasks = { ...data.tasks };
         delete newTasks[taskId];
 
-        setData({
+        updateBoard({
             ...data,
             tasks: newTasks,
             columns: data.columns.map(col =>

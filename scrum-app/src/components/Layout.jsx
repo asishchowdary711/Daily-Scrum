@@ -5,7 +5,7 @@ import NotificationsPanel from './NotificationsPanel';
 import SettingsModal from './SettingsModal';
 import { useAuth } from '../auth/AuthContext';
 
-const Layout = ({ children, projects, activeProjectId, setActiveProjectId, onCreateIssue, authUser }) => {
+const Layout = ({ children, projects, activeProjectId, setActiveProjectId, onCreateIssue, authUser, liveCounts = {} }) => {
     const { logout } = useAuth();
     const currentProject = projects.find(p => p.id === activeProjectId);
     const [searchQuery, setSearchQuery] = useState('');
@@ -65,16 +65,18 @@ const Layout = ({ children, projects, activeProjectId, setActiveProjectId, onCre
                     </div>
                 </div>
 
-                {/* Create Button */}
-                <div className="px-3 pt-4 pb-2">
-                    <button
-                        onClick={onCreateIssue}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/25 transition-all active:scale-[0.97]"
-                    >
-                        <Icons.Plus className="w-4 h-4" />
-                        Create Issue
-                    </button>
-                </div>
+                {/* Create Button — Hidden for unsupported types (Finding 5) */}
+                {onCreateIssue && (
+                    <div className="px-3 pt-4 pb-2">
+                        <button
+                            onClick={onCreateIssue}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/25 transition-all active:scale-[0.97]"
+                        >
+                            <Icons.Plus className="w-4 h-4" />
+                            Create Issue
+                        </button>
+                    </div>
+                )}
 
                 {/* Navigation */}
                 <nav className="flex-1 overflow-y-auto py-3 px-3 space-y-6">
@@ -88,7 +90,7 @@ const Layout = ({ children, projects, activeProjectId, setActiveProjectId, onCre
                                 {projectsByType.kanban.map(project => {
                                     const Icon = getIcon(project.icon);
                                     const isActive = project.id === activeProjectId;
-                                    const taskCount = project.tasks ? Object.keys(project.tasks).length : 0;
+                                    const taskCount = liveCounts[project.id] ?? (project.tasks ? Object.keys(project.tasks).length : 0);
                                     return (
                                         <button
                                             key={project.id}
@@ -125,9 +127,9 @@ const Layout = ({ children, projects, activeProjectId, setActiveProjectId, onCre
                                         >
                                             <Icon className="w-4 h-4 shrink-0" />
                                             <span className="truncate">{project.name}</span>
-                                            {project.items && (
+                                            {(liveCounts[project.id] != null || project.items) && (
                                                 <span className="ml-auto text-[10px] text-slate-500 bg-white/[0.05] px-1.5 py-0.5 rounded-md font-bold">
-                                                    {project.items.length}
+                                                    {liveCounts[project.id] ?? project.items?.length ?? 0}
                                                 </span>
                                             )}
                                         </button>
@@ -155,9 +157,9 @@ const Layout = ({ children, projects, activeProjectId, setActiveProjectId, onCre
                                         >
                                             <Icon className="w-4 h-4 shrink-0" />
                                             <span className="truncate">{project.name}</span>
-                                            {project.items && (
+                                            {(liveCounts[project.id] != null || project.items) && (
                                                 <span className="ml-auto text-[10px] text-slate-500 bg-white/[0.05] px-1.5 py-0.5 rounded-md font-bold">
-                                                    {project.items.length}
+                                                    {liveCounts[project.id] ?? project.items?.length ?? 0}
                                                 </span>
                                             )}
                                         </button>

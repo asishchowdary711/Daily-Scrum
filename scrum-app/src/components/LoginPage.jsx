@@ -12,8 +12,14 @@ const LoginPage = () => {
     const [rememberMe, setRememberMe] = useState(false);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [lockoutSeconds, setLockoutSeconds] = useState(0);
-    const [remainingAttempts, setRemainingAttempts] = useState(5);
+    const [lockoutSeconds, setLockoutSeconds] = useState(() => {
+        const check = checkRateLimit();
+        return !check.allowed && check.lockoutSeconds > 0 ? check.lockoutSeconds : 0;
+    });
+    const [remainingAttempts, setRemainingAttempts] = useState(() => {
+        const check = checkRateLimit();
+        return check.remainingAttempts;
+    });
 
     const lockoutTimerRef = useRef(null);
     const usernameRef = useRef(null);
@@ -24,15 +30,7 @@ const LoginPage = () => {
     }, []);
 
     // Check rate limit on mount
-    useEffect(() => {
-        const check = checkRateLimit();
-        if (!check.allowed && check.lockoutSeconds > 0) {
-            setLockoutSeconds(check.lockoutSeconds);
-            setRemainingAttempts(0);
-        } else {
-            setRemainingAttempts(check.remainingAttempts);
-        }
-    }, []);
+    // Check rate limit on mount - handled in initial state
 
     // Lockout countdown
     useEffect(() => {

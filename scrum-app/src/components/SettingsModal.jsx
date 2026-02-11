@@ -1,24 +1,15 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Modal from './Modal';
 import { clsx } from 'clsx';
 import { Moon, Sun, Monitor, Palette, Bell, Layout } from 'lucide-react';
+import { useSettings } from '../auth/SettingsContext';
 
 const SettingsModal = ({ isOpen, onClose }) => {
-    const [settings, setSettings] = useState({
-        theme: 'dark',
-        compactMode: false,
-        notifications: true,
-        showClosedItems: true,
-        defaultView: 'kanban',
-        dateFormat: 'yyyy-mm-dd',
-    });
+    // Finding 10: Wire to SettingsContext instead of local state
+    const { settings, updateSetting } = useSettings();
 
     const handleToggle = (key) => {
-        setSettings(prev => ({ ...prev, [key]: !prev[key] }));
-    };
-
-    const handleChange = (key, value) => {
-        setSettings(prev => ({ ...prev, [key]: value }));
+        updateSetting(key, !settings[key]);
     };
 
     const toggleClass = (active) => clsx(
@@ -53,11 +44,11 @@ const SettingsModal = ({ isOpen, onClose }) => {
                                 {[
                                     { id: 'dark', icon: Moon, label: 'Dark' },
                                     { id: 'light', icon: Sun, label: 'Light' },
-                                    { id: 'system', icon: Monitor, label: 'Auto' },
+                                    { id: 'auto', icon: Monitor, label: 'Auto' },
                                 ].map(opt => (
                                     <button
                                         key={opt.id}
-                                        onClick={() => handleChange('theme', opt.id)}
+                                        onClick={() => updateSetting('theme', opt.id)}
                                         className={clsx(
                                             "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-all",
                                             settings.theme === opt.id
@@ -99,8 +90,8 @@ const SettingsModal = ({ isOpen, onClose }) => {
                                     <p className="text-[11px] text-slate-500">Get alerts for status changes</p>
                                 </div>
                             </div>
-                            <button onClick={() => handleToggle('notifications')} className={toggleClass(settings.notifications)}>
-                                <div className={toggleDot(settings.notifications)} />
+                            <button onClick={() => handleToggle('showNotifications')} className={toggleClass(settings.showNotifications)}>
+                                <div className={toggleDot(settings.showNotifications)} />
                             </button>
                         </div>
                     </div>
@@ -127,18 +118,18 @@ const SettingsModal = ({ isOpen, onClose }) => {
                             </div>
                             <select
                                 value={settings.dateFormat}
-                                onChange={(e) => handleChange('dateFormat', e.target.value)}
+                                onChange={(e) => updateSetting('dateFormat', e.target.value)}
                                 className="px-3 py-1.5 bg-white/[0.04] border border-white/[0.08] rounded-lg text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500/40 appearance-none cursor-pointer"
                             >
-                                <option value="yyyy-mm-dd">YYYY-MM-DD</option>
-                                <option value="dd/mm/yyyy">DD/MM/YYYY</option>
-                                <option value="mm/dd/yyyy">MM/DD/YYYY</option>
+                                <option value="relative">Relative (2 days ago)</option>
+                                <option value="absolute">DD/MM/YYYY</option>
+                                <option value="iso">YYYY-MM-DD</option>
                             </select>
                         </div>
                     </div>
                 </div>
 
-                {/* Save */}
+                {/* Done */}
                 <div className="flex justify-end pt-2 border-t border-white/[0.06]">
                     <button
                         onClick={onClose}
