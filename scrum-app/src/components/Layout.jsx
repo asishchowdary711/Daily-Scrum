@@ -3,8 +3,10 @@ import * as Icons from 'lucide-react';
 import { clsx } from 'clsx';
 import NotificationsPanel from './NotificationsPanel';
 import SettingsModal from './SettingsModal';
+import { useAuth } from '../auth/AuthContext';
 
-const Layout = ({ children, projects, activeProjectId, setActiveProjectId, onCreateIssue }) => {
+const Layout = ({ children, projects, activeProjectId, setActiveProjectId, onCreateIssue, authUser }) => {
+    const { logout } = useAuth();
     const currentProject = projects.find(p => p.id === activeProjectId);
     const [searchQuery, setSearchQuery] = useState('');
     const [showNotifications, setShowNotifications] = useState(false);
@@ -173,11 +175,11 @@ const Layout = ({ children, projects, activeProjectId, setActiveProjectId, onCre
                         className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/[0.04] transition-colors cursor-pointer"
                     >
                         <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-violet-500 to-fuchsia-500 flex items-center justify-center text-white font-semibold text-xs shadow-md shadow-violet-500/20">
-                            AV
+                            {(authUser?.displayName || 'U').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}
                         </div>
                         <div className="flex-1 min-w-0 text-left">
-                            <p className="text-sm font-medium text-white truncate">Asish V</p>
-                            <p className="text-[10px] text-slate-500">Scrum Master</p>
+                            <p className="text-sm font-medium text-white truncate">{authUser?.displayName || 'User'}</p>
+                            <p className="text-[10px] text-slate-500">{authUser?.role || 'Member'}</p>
                         </div>
                         <Icons.ChevronDown className={clsx("w-3.5 h-3.5 text-slate-500 transition-transform", showUserMenu && "rotate-180")} />
                     </button>
@@ -201,7 +203,10 @@ const Layout = ({ children, projects, activeProjectId, setActiveProjectId, onCre
                                 Help & Guide
                             </button>
                             <div className="border-t border-white/[0.06] my-1" />
-                            <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-rose-400 hover:bg-rose-500/10 transition-colors text-left">
+                            <button
+                                onClick={() => { setShowUserMenu(false); logout(); }}
+                                className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-rose-400 hover:bg-rose-500/10 transition-colors text-left"
+                            >
                                 <Icons.LogOut className="w-4 h-4" />
                                 Sign Out
                             </button>

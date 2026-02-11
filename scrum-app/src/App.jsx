@@ -4,9 +4,12 @@ import KanbanBoard from './components/KanbanBoard';
 import TableView from './components/TableView';
 import SimpleListView from './components/SimpleListView';
 import CreateIssueModal from './components/CreateIssueModal';
+import ProtectedRoute from './auth/ProtectedRoute';
+import { useAuth } from './auth/AuthContext';
 import { initialData } from './data/initialData';
 
 function App() {
+  const { user } = useAuth();
   const [activeProjectId, setActiveProjectId] = useState(
     initialData.projects[0]?.id || 'cortex'
   );
@@ -53,12 +56,13 @@ function App() {
   }, [currentProject]);
 
   return (
-    <>
+    <ProtectedRoute>
       <Layout
         projects={initialData.projects}
         activeProjectId={activeProjectId}
         setActiveProjectId={setActiveProjectId}
         onCreateIssue={() => setShowCreateModal(true)}
+        authUser={user}
       >
         {({ searchQuery }) => (
           <>
@@ -95,7 +99,7 @@ function App() {
         onSubmit={handleCreateIssue}
         projectType={currentProject?.type}
       />
-    </>
+    </ProtectedRoute>
   );
 }
 
