@@ -1,8 +1,54 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --bg-app: #f3f6fb;
+  --bg-panel: #ffffff;
+  --bg-surface: #edf2f9;
+  --bg-elevated: #ffffff;
+  --card-bg: rgba(255, 255, 255, 0.9);
+  --card-border: rgba(15, 23, 42, 0.12);
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --text-subtle: #94a3b8;
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-soft: rgba(37, 99, 235, 0.15);
+  --danger: #e11d48;
+  --warning: #d97706;
+  --success: #059669;
+  --input-bg: #ffffff;
+  --focus-ring: rgba(37, 99, 235, 0.3);
+  --shadow-card: 0 10px 30px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 24px 48px rgba(15, 23, 42, 0.14);
+}
+
+:root[data-theme='dark'] {
+  --bg-app: #0b1020;
+  --bg-panel: #11182b;
+  --bg-surface: #141d32;
+  --bg-elevated: #17233d;
+  --card-bg: rgba(20, 29, 50, 0.82);
+  --card-border: rgba(148, 163, 184, 0.18);
+  --text-primary: #e2e8f0;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-subtle: #64748b;
+  --primary: #2563eb;
+  --primary-hover: #3b82f6;
+  --primary-soft: rgba(59, 130, 246, 0.2);
+  --danger: #fb7185;
+  --warning: #f59e0b;
+  --success: #10b981;
+  --input-bg: rgba(15, 23, 42, 0.6);
+  --focus-ring: rgba(59, 130, 246, 0.35);
+  --shadow-card: 0 14px 34px rgba(2, 6, 23, 0.38);
+  --shadow-lg: 0 28px 56px rgba(2, 6, 23, 0.55);
+}
 
 @layer base {
   * {
@@ -16,12 +62,16 @@
   }
 
   body {
-    @apply bg-[#0f1117] text-slate-200 m-0 p-0;
+    margin: 0;
+    padding: 0;
+    background: var(--bg-app);
+    color: var(--text-primary);
+    transition: background-color 220ms ease, color 220ms ease;
   }
 
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
   }
 
   ::-webkit-scrollbar-track {
@@ -29,21 +79,37 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-slate-700 rounded-full;
+    background: var(--text-subtle);
+    border-radius: 999px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-slate-600;
+    background: var(--text-muted);
   }
 }
 
 @layer components {
+  .bg-app {
+    background: var(--bg-app);
+  }
+
+  .panel-surface {
+    background: var(--bg-panel);
+    border-color: var(--card-border);
+  }
+
   .glass-card {
-    @apply bg-[#1a1d27]/80 backdrop-blur-xl border border-white/[0.06] rounded-2xl;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-card);
+    backdrop-filter: blur(16px);
   }
 
   .glass-surface {
-    @apply bg-[#1a1d27]/60 backdrop-blur-md border border-white/[0.04];
+    background: color-mix(in oklab, var(--bg-surface) 86%, transparent);
+    border: 1px solid var(--card-border);
+    backdrop-filter: blur(12px);
   }
 
   .status-badge {
@@ -55,15 +121,15 @@
   }
 
   .priority-high {
-    @apply bg-rose-500;
+    background: var(--danger);
   }
 
   .priority-medium {
-    @apply bg-amber-400;
+    background: var(--warning);
   }
 
   .priority-low {
-    @apply bg-emerald-400;
+    background: var(--success);
   }
 
   .nav-item {
@@ -71,15 +137,107 @@
   }
 
   .nav-item-active {
-    @apply bg-blue-600/15 text-blue-400 border border-blue-500/20;
+    background: var(--primary-soft);
+    color: var(--primary);
+    border: 1px solid color-mix(in oklab, var(--primary) 35%, transparent);
   }
 
   .nav-item-inactive {
-    @apply text-slate-400 hover:bg-white/[0.04] hover:text-slate-200;
+    color: var(--text-muted);
+  }
+
+  .nav-item-inactive:hover {
+    background: color-mix(in oklab, var(--bg-surface) 85%, transparent);
+    color: var(--text-primary);
+  }
+
+  .btn-primary {
+    background: var(--primary);
+    color: #fff;
+    border: 1px solid transparent;
+    transition: background-color 180ms ease, transform 120ms ease, box-shadow 180ms ease;
+    box-shadow: 0 10px 24px color-mix(in oklab, var(--primary) 32%, transparent);
+  }
+
+  .btn-primary:hover {
+    background: var(--primary-hover);
+  }
+
+  .btn-primary:active {
+    transform: scale(0.98);
+  }
+
+  .btn-secondary {
+    background: color-mix(in oklab, var(--bg-surface) 80%, transparent);
+    color: var(--text-secondary);
+    border: 1px solid var(--card-border);
+    transition: background-color 180ms ease, color 180ms ease;
+  }
+
+  .btn-secondary:hover {
+    background: color-mix(in oklab, var(--bg-surface) 92%, transparent);
+    color: var(--text-primary);
+  }
+
+  .icon-btn {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid transparent;
+    transition: background-color 180ms ease, color 180ms ease;
+  }
+
+  .icon-btn:hover,
+  .icon-btn-active {
+    background: color-mix(in oklab, var(--bg-surface) 88%, transparent);
+    color: var(--text-primary);
+    border-color: var(--card-border);
+  }
+
+  .input-base,
+  .select-base,
+  .textarea-base {
+    background: var(--input-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--card-border);
+    transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+  }
+
+  .input-base::placeholder,
+  .textarea-base::placeholder {
+    color: var(--text-muted);
+  }
+
+  .input-base:focus,
+  .select-base:focus,
+  .textarea-base:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--focus-ring);
+  }
+
+  .text-theme-primary {
+    color: var(--text-primary);
+  }
+
+  .text-theme-secondary {
+    color: var(--text-secondary);
+  }
+
+  .text-theme-muted {
+    color: var(--text-muted);
+  }
+
+  .border-theme {
+    border-color: var(--card-border);
+  }
+
+  .danger-soft {
+    background: color-mix(in oklab, var(--danger) 18%, transparent);
+    color: var(--danger);
   }
 }
 
-/* ─── Login Page Animations ─── */
+/* Login animations */
 .login-fade-in {
   animation: loginFadeIn 0.6s ease-out;
 }
@@ -101,9 +259,9 @@
 
 @keyframes logoGlow {
   from {
-    box-shadow: 0 8px 32px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 8px 32px color-mix(in oklab, var(--primary) 35%, transparent);
   }
   to {
-    box-shadow: 0 8px 48px rgba(99, 102, 241, 0.5);
+    box-shadow: 0 8px 44px color-mix(in oklab, var(--primary) 52%, transparent);
   }
 }

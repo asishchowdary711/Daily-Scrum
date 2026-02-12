@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Modal from './Modal';
 import { clsx } from 'clsx';
-import { Calendar, User, Tag, MessageSquare, Save, Trash2 } from 'lucide-react';
+import { Calendar, User, Tag, Save, Trash2 } from 'lucide-react';
 
 const statusOptions = [
     { id: 'todo', label: 'To Do', color: '#3b82f6' },
@@ -22,7 +22,10 @@ const IssueDetailModal = ({ isOpen, onClose, task, onUpdate, onDelete }) => {
     const [form, setForm] = useState(task || {});
 
     React.useEffect(() => {
-        if (task) setForm({ ...task });
+        if (task) {
+            setForm({ ...task });
+            setEditing(false);
+        }
     }, [task]);
 
     if (!task) return null;
@@ -43,36 +46,33 @@ const IssueDetailModal = ({ isOpen, onClose, task, onUpdate, onDelete }) => {
         }
     };
 
-    const inputClass = "w-full px-3 py-2 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500/40 transition-all";
-    const fieldLabel = "text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1";
+    const inputClass = 'input-base w-full px-3 py-2 rounded-lg text-sm';
+    const fieldLabel = 'text-[10px] font-bold uppercase tracking-wider mb-1 text-theme-muted';
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={task.code || 'Issue Detail'} size="lg">
             <div className="space-y-5">
-                {/* Title */}
                 <div>
                     {editing ? (
                         <input
                             type="text"
                             value={form.title}
                             onChange={(e) => handleChange('title', e.target.value)}
-                            className="w-full text-lg font-semibold text-white bg-transparent border-b border-white/[0.1] pb-1 focus:outline-none focus:border-blue-500/50"
+                            className="input-base w-full text-lg font-semibold px-0 pb-1 border-0 border-b rounded-none"
                         />
                     ) : (
-                        <h3 className="text-lg font-semibold text-white">{task.title}</h3>
+                        <h3 className="text-lg font-semibold text-theme-primary">{task.title}</h3>
                     )}
                 </div>
 
-                {/* Meta grid */}
                 <div className="grid grid-cols-2 gap-4">
-                    {/* Status */}
                     <div>
                         <p className={fieldLabel}>Status</p>
                         {editing ? (
                             <select
                                 value={form.status}
                                 onChange={(e) => handleChange('status', e.target.value)}
-                                className={inputClass + " appearance-none cursor-pointer"}
+                                className={`${inputClass} select-base appearance-none cursor-pointer`}
                             >
                                 {statusOptions.map(s => (
                                     <option key={s.id} value={s.id}>{s.label}</option>
@@ -84,21 +84,20 @@ const IssueDetailModal = ({ isOpen, onClose, task, onUpdate, onDelete }) => {
                                     className="w-2.5 h-2.5 rounded-full"
                                     style={{ backgroundColor: statusOptions.find(s => s.id === task.status)?.color || '#6b7280' }}
                                 />
-                                <span className="text-sm text-slate-300">
+                                <span className="text-sm text-theme-secondary">
                                     {statusOptions.find(s => s.id === task.status)?.label || task.status}
                                 </span>
                             </div>
                         )}
                     </div>
 
-                    {/* Priority */}
                     <div>
                         <p className={fieldLabel}>Priority</p>
                         {editing ? (
                             <select
                                 value={form.priority}
                                 onChange={(e) => handleChange('priority', e.target.value)}
-                                className={inputClass + " appearance-none cursor-pointer"}
+                                className={`${inputClass} select-base appearance-none cursor-pointer`}
                             >
                                 {priorityOptions.map(p => (
                                     <option key={p.id} value={p.id}>{p.label}</option>
@@ -106,18 +105,17 @@ const IssueDetailModal = ({ isOpen, onClose, task, onUpdate, onDelete }) => {
                             </select>
                         ) : (
                             <div className="flex items-center gap-2">
-                                <div className={clsx("w-2 h-2 rounded-full", priorityOptions.find(p => p.id === task.priority)?.dot || 'bg-amber-400')} />
-                                <span className="text-sm text-slate-300 capitalize">{task.priority}</span>
+                                <div className={clsx('w-2 h-2 rounded-full', priorityOptions.find(p => p.id === task.priority)?.dot || 'bg-amber-400')} />
+                                <span className="text-sm text-theme-secondary capitalize">{task.priority}</span>
                             </div>
                         )}
                     </div>
 
-                    {/* Assignee */}
                     <div>
                         <p className={fieldLabel}>Assignee</p>
                         {editing ? (
                             <div className="flex items-center gap-2">
-                                <User className="w-4 h-4 text-slate-500" />
+                                <User className="w-4 h-4 text-theme-muted" />
                                 <input
                                     type="text"
                                     value={form.assignee}
@@ -131,17 +129,16 @@ const IssueDetailModal = ({ isOpen, onClose, task, onUpdate, onDelete }) => {
                                 <div className="w-6 h-6 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-[9px] font-bold text-slate-300">
                                     {(task.assignee || 'U').slice(0, 2).toUpperCase()}
                                 </div>
-                                <span className="text-sm text-slate-300">{task.assignee || 'Unassigned'}</span>
+                                <span className="text-sm text-theme-secondary">{task.assignee || 'Unassigned'}</span>
                             </div>
                         )}
                     </div>
 
-                    {/* Due Date */}
                     <div>
                         <p className={fieldLabel}>Due Date</p>
                         {editing ? (
                             <div className="flex items-center gap-2">
-                                <Calendar className="w-4 h-4 text-slate-500" />
+                                <Calendar className="w-4 h-4 text-theme-muted" />
                                 <input
                                     type="date"
                                     value={form.liveDate || ''}
@@ -150,15 +147,14 @@ const IssueDetailModal = ({ isOpen, onClose, task, onUpdate, onDelete }) => {
                                 />
                             </div>
                         ) : (
-                            <div className="flex items-center gap-2 text-sm text-slate-300">
-                                <Calendar className="w-4 h-4 text-slate-500" />
+                            <div className="flex items-center gap-2 text-sm text-theme-secondary">
+                                <Calendar className="w-4 h-4 text-theme-muted" />
                                 {task.liveDate || 'No date set'}
                             </div>
                         )}
                     </div>
                 </div>
 
-                {/* Comments / Description */}
                 <div>
                     <p className={fieldLabel}>Comments</p>
                     {editing ? (
@@ -166,19 +162,18 @@ const IssueDetailModal = ({ isOpen, onClose, task, onUpdate, onDelete }) => {
                             value={form.comments || ''}
                             onChange={(e) => handleChange('comments', e.target.value)}
                             rows={4}
-                            className={clsx(inputClass, "resize-none")}
+                            className="textarea-base w-full px-3 py-2 rounded-lg text-sm resize-none"
                             placeholder="Add comments..."
                         />
                     ) : (
                         <div className="glass-surface rounded-xl p-4 min-h-[80px]">
-                            <p className="text-sm text-slate-400 whitespace-pre-line leading-relaxed">
+                            <p className="text-sm whitespace-pre-line leading-relaxed text-theme-secondary">
                                 {task.comments || 'No comments yet.'}
                             </p>
                         </div>
                     )}
                 </div>
 
-                {/* Code */}
                 {task.code && (
                     <div>
                         <p className={fieldLabel}>Issue Code</p>
@@ -191,19 +186,15 @@ const IssueDetailModal = ({ isOpen, onClose, task, onUpdate, onDelete }) => {
                             />
                         ) : (
                             <div className="flex items-center gap-2">
-                                <Tag className="w-4 h-4 text-blue-400" />
-                                <span className="text-sm font-mono text-blue-400">{task.code}</span>
+                                <Tag className="w-4 h-4 text-blue-500" />
+                                <span className="text-sm font-mono text-blue-500">{task.code}</span>
                             </div>
                         )}
                     </div>
                 )}
 
-                {/* Actions */}
-                <div className="flex items-center justify-between pt-4 border-t border-white/[0.06]">
-                    <button
-                        onClick={handleDelete}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-rose-400 hover:bg-rose-500/10 transition-all"
-                    >
+                <div className="flex items-center justify-between pt-4 border-t border-theme">
+                    <button onClick={handleDelete} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium danger-soft">
                         <Trash2 className="w-3.5 h-3.5" />
                         Delete
                     </button>
@@ -213,23 +204,17 @@ const IssueDetailModal = ({ isOpen, onClose, task, onUpdate, onDelete }) => {
                             <>
                                 <button
                                     onClick={() => { setForm({ ...task }); setEditing(false); }}
-                                    className="px-4 py-2 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-white/[0.06] transition-all"
+                                    className="btn-secondary px-4 py-2 rounded-xl text-sm font-medium"
                                 >
                                     Cancel
                                 </button>
-                                <button
-                                    onClick={handleSave}
-                                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/20 transition-all active:scale-95"
-                                >
+                                <button onClick={handleSave} className="btn-primary flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold">
                                     <Save className="w-3.5 h-3.5" />
                                     Save Changes
                                 </button>
                             </>
                         ) : (
-                            <button
-                                onClick={() => setEditing(true)}
-                                className="px-4 py-2 rounded-xl text-sm font-semibold bg-white/[0.06] hover:bg-white/[0.1] text-white transition-all"
-                            >
+                            <button onClick={() => setEditing(true)} className="btn-secondary px-4 py-2 rounded-xl text-sm font-semibold">
                                 Edit Issue
                             </button>
                         )}

@@ -1,25 +1,9 @@
-import React, { useState, useEffect } from 'react';
+/* eslint-disable react-hooks/set-state-in-effect */
+import React, { useMemo, useState, useEffect } from 'react';
 import Modal from './Modal';
 import { clsx } from 'clsx';
 
-// Finding 4: Separate status options per project type
-const KANBAN_STATUSES = [
-    { value: 'todo', label: 'To Do' },
-    { value: 'inprogress', label: 'In Progress' },
-    { value: 'qa', label: 'Ready for QA' },
-    { value: 'live', label: 'Live' },
-    { value: 'done', label: 'Done / Closed' },
-];
-
-const TABLE_STATUSES = [
-    { value: 'open', label: 'Open' },
-    { value: 'in-progress', label: 'In Progress' },
-    { value: 'on-hold', label: 'On Hold' },
-    { value: 'live', label: 'Live' },
-    { value: 'closed', label: 'Closed' },
-];
-
-const getDefaultForm = (projectType) => ({
+const createInitialForm = (projectType) => ({
     title: '',
     code: '',
     status: projectType === 'kanban' ? 'todo' : 'open',
@@ -34,42 +18,50 @@ const getDefaultForm = (projectType) => ({
 });
 
 const CreateIssueModal = ({ isOpen, onClose, onSubmit, projectType }) => {
-    const [form, setForm] = useState(() => getDefaultForm(projectType));
+    const [form, setForm] = useState(createInitialForm(projectType));
 
-    // Finding 11: Reset form on projectType change
     useEffect(() => {
-        setForm(getDefaultForm(projectType));
-    }, [projectType]);
+        if (isOpen) {
+            setForm(createInitialForm(projectType));
+        }
+    }, [isOpen, projectType]);
+
+    const statusOptions = useMemo(() => (
+        projectType === 'kanban'
+            ? [
+                { value: 'todo', label: 'To Do' },
+                { value: 'inprogress', label: 'In Progress' },
+                { value: 'qa', label: 'Ready for QA' },
+                { value: 'live', label: 'Live' },
+                { value: 'done', label: 'Closed' },
+            ]
+            : [
+                { value: 'open', label: 'Open' },
+                { value: 'in-progress', label: 'In Progress' },
+                { value: 'on-hold', label: 'On Hold' },
+                { value: 'live', label: 'Live' },
+                { value: 'closed', label: 'Closed' },
+            ]
+    ), [projectType]);
 
     const handleChange = (field, value) => {
         setForm(prev => ({ ...prev, [field]: value }));
-    };
-
-    // Finding 11: Reset form on close
-    const handleClose = () => {
-        setForm(getDefaultForm(projectType));
-        onClose();
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
         if (!form.title.trim()) return;
         onSubmit(form);
-        setForm(getDefaultForm(projectType));
         onClose();
     };
 
-    // Finding 4: Use correct status list
-    const statusOptions = projectType === 'kanban' ? KANBAN_STATUSES : TABLE_STATUSES;
-
-    const inputClass = "w-full px-3 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500/40 focus:border-blue-500/30 transition-all";
-    const labelClass = "block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5";
-    const selectClass = "w-full px-3 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500/40 focus:border-blue-500/30 transition-all appearance-none cursor-pointer";
+    const inputClass = 'input-base w-full px-3 py-2.5 rounded-xl text-sm';
+    const labelClass = 'block text-[11px] font-semibold uppercase tracking-wider mb-1.5 text-theme-muted';
+    const selectClass = 'select-base w-full px-3 py-2.5 rounded-xl text-sm appearance-none cursor-pointer';
 
     return (
-        <Modal isOpen={isOpen} onClose={handleClose} title="Create New Issue" size="md">
+        <Modal isOpen={isOpen} onClose={onClose} title="Create New Issue" size="md">
             <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Title */}
                 <div>
                     <label className={labelClass}>Title *</label>
                     <input
@@ -82,12 +74,9 @@ const CreateIssueModal = ({ isOpen, onClose, onSubmit, projectType }) => {
                     />
                 </div>
 
-                {/* Two columns */}
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <label className={labelClass}>
-                            {projectType === 'kanban' ? 'Code / CR' : 'Area'}
-                        </label>
+                        <label className={labelClass}>{projectType === 'kanban' ? 'Code / CR' : 'Area'}</label>
                         <input
                             type="text"
                             value={projectType === 'kanban' ? form.code : form.area}
@@ -116,8 +105,8 @@ const CreateIssueModal = ({ isOpen, onClose, onSubmit, projectType }) => {
                             onChange={(e) => handleChange('status', e.target.value)}
                             className={selectClass}
                         >
-                            {statusOptions.map(opt => (
-                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            {statusOptions.map((option) => (
+                                <option key={option.value} value={option.value}>{option.label}</option>
                             ))}
                         </select>
                     </div>
@@ -128,9 +117,9 @@ const CreateIssueModal = ({ isOpen, onClose, onSubmit, projectType }) => {
                             onChange={(e) => handleChange('priority', e.target.value)}
                             className={selectClass}
                         >
-                            <option value="high">🔴 High</option>
-                            <option value="medium">🟡 Medium</option>
-                            <option value="low">🟢 Low</option>
+                            <option value="high">High</option>
+                            <option value="medium">Medium</option>
+                            <option value="low">Low</option>
                         </select>
                     </div>
                     <div>
@@ -144,17 +133,14 @@ const CreateIssueModal = ({ isOpen, onClose, onSubmit, projectType }) => {
                     </div>
                 </div>
 
-                {/* Description — Finding 11: explicit per-type field binding */}
                 <div>
-                    <label className={labelClass}>
-                        {projectType === 'kanban' ? 'Comments' : 'Description'}
-                    </label>
+                    <label className={labelClass}>Description / Comments</label>
                     <textarea
                         value={projectType === 'kanban' ? form.comments : form.description}
                         onChange={(e) => handleChange(projectType === 'kanban' ? 'comments' : 'description', e.target.value)}
                         placeholder="Add details..."
                         rows={3}
-                        className={clsx(inputClass, "resize-none")}
+                        className={clsx('textarea-base w-full px-3 py-2.5 rounded-xl text-sm resize-none')}
                     />
                 </div>
 
@@ -171,19 +157,18 @@ const CreateIssueModal = ({ isOpen, onClose, onSubmit, projectType }) => {
                     </div>
                 )}
 
-                {/* Actions */}
-                <div className="flex justify-end gap-3 pt-4 border-t border-white/[0.06]">
+                <div className="flex justify-end gap-3 pt-4 border-t border-theme">
                     <button
                         type="button"
-                        onClick={handleClose}
-                        className="px-4 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-white/[0.06] transition-all"
+                        onClick={onClose}
+                        className="btn-secondary px-4 py-2.5 rounded-xl text-sm font-medium"
                     >
                         Cancel
                     </button>
                     <button
                         type="submit"
                         disabled={!form.title.trim()}
-                        className="px-5 py-2.5 rounded-xl text-sm font-semibold bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
+                        className="btn-primary px-5 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                         Create Issue
                     </button>

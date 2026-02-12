@@ -11,9 +11,9 @@ const mockNotifications = [
 ];
 
 const typeIcons = {
-    info: { icon: Info, color: 'text-blue-400', bg: 'bg-blue-500/10' },
-    success: { icon: CheckCircle, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-    warning: { icon: AlertTriangle, color: 'text-amber-400', bg: 'bg-amber-500/10' },
+    info: { icon: Info, color: 'text-blue-500', bg: 'bg-blue-500/15' },
+    success: { icon: CheckCircle, color: 'text-emerald-500', bg: 'bg-emerald-500/15' },
+    warning: { icon: AlertTriangle, color: 'text-amber-500', bg: 'bg-amber-500/15' },
 };
 
 const NotificationsPanel = ({ isOpen, onClose, notifications, onMarkAllRead }) => {
@@ -23,34 +23,29 @@ const NotificationsPanel = ({ isOpen, onClose, notifications, onMarkAllRead }) =
     const unreadCount = items.filter(n => !n.read).length;
 
     return (
-        <div className="absolute right-16 top-14 w-[380px] glass-card shadow-2xl shadow-black/40 z-50 overflow-hidden">
-            {/* Header */}
-            <div className="px-5 py-3.5 border-b border-white/[0.06] flex items-center justify-between">
+        <div className="absolute right-16 top-14 w-[380px] glass-card z-50 overflow-hidden">
+            <div className="px-5 py-3.5 border-b border-theme flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <Bell className="w-4 h-4 text-slate-400" />
-                    <h3 className="text-sm font-semibold text-white">Notifications</h3>
+                    <Bell className="w-4 h-4 text-theme-muted" />
+                    <h3 className="text-sm font-semibold text-theme-primary">Notifications</h3>
                     {unreadCount > 0 && (
-                        <span className="text-[10px] font-bold text-blue-400 bg-blue-500/15 px-1.5 py-0.5 rounded-full">
+                        <span className="text-[10px] font-bold text-blue-500 bg-blue-500/15 px-1.5 py-0.5 rounded-full">
                             {unreadCount} new
                         </span>
                     )}
                 </div>
                 <div className="flex items-center gap-2">
                     {unreadCount > 0 && (
-                        <button
-                            onClick={onMarkAllRead}
-                            className="text-[11px] text-blue-400 hover:text-blue-300 font-medium transition-colors"
-                        >
+                        <button onClick={onMarkAllRead} className="text-[11px] font-medium text-blue-500 hover:text-blue-400 transition-colors">
                             Mark all read
                         </button>
                     )}
-                    <button onClick={onClose} className="p-1 rounded-md hover:bg-white/[0.06] text-slate-500 hover:text-white transition-colors">
+                    <button onClick={onClose} className="icon-btn p-1 rounded-md">
                         <X className="w-3.5 h-3.5" />
                     </button>
                 </div>
             </div>
 
-            {/* Notifications List */}
             <div className="max-h-[360px] overflow-y-auto">
                 {items.map((item) => {
                     const typeConfig = typeIcons[item.type] || typeIcons.info;
@@ -59,28 +54,27 @@ const NotificationsPanel = ({ isOpen, onClose, notifications, onMarkAllRead }) =
                         <div
                             key={item.id}
                             className={clsx(
-                                "flex items-start gap-3 px-5 py-3.5 border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors cursor-pointer",
-                                !item.read && "bg-blue-500/[0.03]"
+                                'flex items-start gap-3 px-5 py-3.5 border-b border-theme hover:bg-[var(--bg-surface)] transition-colors cursor-pointer',
+                                !item.read && 'bg-blue-500/10'
                             )}
                         >
-                            <div className={clsx("w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5", typeConfig.bg)}>
-                                <TypeIcon className={clsx("w-4 h-4", typeConfig.color)} />
+                            <div className={clsx('w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5', typeConfig.bg)}>
+                                <TypeIcon className={clsx('w-4 h-4', typeConfig.color)} />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className={clsx("text-sm leading-snug", item.read ? "text-slate-400" : "text-slate-200 font-medium")}>
+                                <p className={clsx('text-sm leading-snug', item.read ? 'text-theme-secondary' : 'text-theme-primary font-medium')}>
                                     {item.title}
                                 </p>
-                                <p className="text-[11px] text-slate-600 mt-0.5">{item.time}</p>
+                                <p className="text-[11px] mt-0.5 text-theme-muted">{item.time}</p>
                             </div>
-                            {!item.read && <div className="w-2 h-2 rounded-full bg-blue-400 shrink-0 mt-2" />}
+                            {!item.read && <div className="w-2 h-2 rounded-full bg-blue-500 shrink-0 mt-2" />}
                         </div>
                     );
                 })}
             </div>
 
-            {/* Footer */}
-            <div className="px-5 py-3 border-t border-white/[0.06] text-center">
-                <button className="text-xs text-slate-500 hover:text-slate-300 font-medium transition-colors">
+            <div className="px-5 py-3 border-t border-theme text-center">
+                <button className="text-xs font-medium text-theme-muted hover:text-theme-primary transition-colors">
                     View all notifications
                 </button>
             </div>
